@@ -1,11 +1,10 @@
 package scheduler.util;
 
 import org.sqlite.SQLiteException;
-import scheduler.business_logic.Resources;
+import scheduler.dbModels.Resources;
 import scheduler.dbModels.Job;
 import scheduler.dbModels.Operation;
 
-import javax.swing.plaf.nimbus.State;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.sql.*;
@@ -338,8 +337,30 @@ public class SQLManager {
     }
 
     public Resources findNeededResource(String type) {
-        String sqlString = "SELECT ID, Total_run_time, job_count FROM Resource WHERE Operation_type = '" + type +"'"
+        String sqlString = "SELECT ID, Total_run_time, job_count, name FROM Resource WHERE Operation_type = '"+ type +"'"
                 + " and IsAvailable = true LIMIT 1";
+        Resources result = null;
+        try {
+            Statement statement = conn.createStatement();
+            ResultSet resultSet = statement.executeQuery(sqlString);
+            while (resultSet.next()) {
+                result = new Resources(
+                        resultSet.getInt("id"),
+                        resultSet.getInt("Total_run_time"),
+                        resultSet.getInt("job_count"),
+                        true
+                );
+                System.out.println("id:" + resultSet.getInt("id") +
+                        "name:" + resultSet.getString("name"));
+            }
+        } catch (Exception e) {
+            System.out.println("Get resource by type error: " + e);
+        }
+        return result;
+    }
+    public Resources findNeededResourceById(int id) {
+        String sqlString = "SELECT ID, Total_run_time, job_count FROM Resource WHERE id = '" + id +"'";
+
         Resources result = null;
         try {
             Statement statement = conn.createStatement();
@@ -353,7 +374,7 @@ public class SQLManager {
                 );
             }
         } catch (Exception e) {
-            System.out.println("Get resourcers list error: " + e);
+            System.out.println("Get resource by id error: " + e);
         }
         return result;
     }
@@ -395,12 +416,12 @@ public class SQLManager {
         }
     }
 
-    public void setResourceAvailable(int id, int runtime, int jobCount) {
+    public void setResourceAvailable(int id, int jobCount, int runtime) {
         String sqlString = "UPDATE Resource SET IsAvailable= true, job_count = ?, Total_run_time = ? WHERE ID = ?";
         try {
             PreparedStatement preparedStatement = conn.prepareStatement(sqlString);
-            preparedStatement.setInt(1, runtime);
-            preparedStatement.setInt(2, jobCount);
+            preparedStatement.setInt(1, jobCount);
+            preparedStatement.setInt(2, runtime);
             preparedStatement.setInt(3, id);
             preparedStatement.executeUpdate();
         } catch (Exception e) {
@@ -482,4 +503,5 @@ public class SQLManager {
             System.out.println(e.getMessage());
         }
     }
+
 }

@@ -1,11 +1,6 @@
 package scheduler.gui;
 
-import java.net.URL;
-
-import java.util.*;
-
 import javafx.application.Platform;
-import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -13,14 +8,16 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.text.Text;
 import scheduler.business_logic.ScedulingRules;
+import scheduler.business_logic.ScheduledTask;
 import scheduler.dbModels.Job;
 import scheduler.dbModels.Operation;
-import scheduler.main.MultiThread;
+import scheduler.dbModels.Resources;
 import scheduler.util.PublicVariables;
 import scheduler.util.SQLManager;
 import scheduler.util.Util;
 
-import static java.lang.System.exit;
+import java.net.URL;
+import java.util.*;
 
 public class GUIController implements Initializable {
     //#region operation
@@ -73,6 +70,8 @@ public class GUIController implements Initializable {
 
     private SQLManager sqlManager;
     private ScedulingRules scedulingRules = new ScedulingRules();
+
+    private List<ScheduledTask> sceduledTask = new ArrayList<>();
 
     public GUIController() {
 
@@ -142,14 +141,7 @@ public class GUIController implements Initializable {
             @Override
             public void handle(ActionEvent event) {
 //                List<Operation> sptJobList = scedulingRules.spt_srpt(1);
-//                setTimer();
-
-                MultiThread processor = new MultiThread();
-                Task<Void> t = processor.setTimer();
-                ProgressBar bar = new ProgressBar();
-                bar.progressProperty().bind(t.progressProperty());
-                new Thread(t).start();
-
+                setTimer();
                 System.out.println("----Scheduling rules----");
 
             }
@@ -210,7 +202,6 @@ public class GUIController implements Initializable {
         fillIDLists();
     }
 
-/*
     public synchronized void setTimer() {
 
         Timer timer = new Timer();
@@ -219,11 +210,14 @@ public class GUIController implements Initializable {
             int  operationCount = sqlManager.getNotFinishedOperations();
 
             public void run() {
-                if (operationCount !=0) { //kilépési feltéltel, ha elfogytak a jobok.
+                if (operationCount !=0) {
                     i++;
                     Platform.runLater(() -> counterText.setText("Time: " + i));
-                    List<Operation> sptJobList = scedulingRules.spt_srpt(i);
+                    List<ScheduledTask> sptJobList = scedulingRules.spt_srpt(i);
+                    sceduledTask.addAll(sptJobList);
+
                     operationCount = sqlManager.getNotFinishedOperations();
+                    findFinishedOperation(i);
 
                 } else
                     timer.cancel();
@@ -231,6 +225,30 @@ public class GUIController implements Initializable {
 
         }, PublicVariables.TimerDelay, PublicVariables.TimerPeriod);
     }
-*/
 
+    private void findFinishedOperation(int actualTime){
+        //TODO ki kellene cserélni lambdára, mert szebb(gyorsabb?)
+        List<ScheduledTask> endedTasks = new ArrayList<>();
+
+        for (ScheduledTask task: sceduledTask) {
+            if(task.getRunTime() == actualTime){
+
+                System.out.println("Operation finished: " + task.getOperationId() + "Time: " + actualTime);
+        //TODO adott job utosó operációjánál a Job táblába be kell írni a végzés idejét
+                sqlManager.setJobActive(task.getJobId(), true);
+                sqlManager.setOperationFinished(task.getOperationId());
+                Resources resources = sqlManager.findNeededResourceById(task.getResourcesId());
+                int increaseJobCountOnResource = resources.getJob_count();
+                increaseJobCountOnResource= increaseJobCountOnResource+1;
+                sqlManager.setResourceAvailable(task.getResourcesId(),
+                        increaseJobCountOnResource,
+                        resources.getTotalRunTime() + task.getRunTime()
+                        );
+                endedTasks.add(task);
+            }
+        }
+
+        if (endedTasks.size() >0)
+            sceduledTask.removeAll(endedTasks);
+    }
 }

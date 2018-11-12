@@ -1,15 +1,16 @@
 package scheduler.business_logic;
 
+import com.sun.org.apache.xerces.internal.xs.ShortList;
 import javafx.concurrent.Task;
 import javafx.scene.control.ProgressBar;
-import scheduler.dbModels.Job;
+import javafx.scene.paint.Stop;
 import scheduler.dbModels.Operation;
+import scheduler.dbModels.Resources;
 import scheduler.main.MultiThread;
 import scheduler.util.SQLManager;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class ScedulingRules {
 
@@ -26,94 +27,131 @@ public class ScedulingRules {
     public ScedulingRules() {
 
         sqlManager = new SQLManager("db");
-         }
+    }
 
-    public List<Operation> spt_srpt(int time) {
+    public List<ScheduledTask> spt_srpt(int time) {
+
+        //List<ScheduledTask> scheduledTaskList = new ArrayList<>();
 
         System.out.println("spt run");
         System.out.println("Time: " + time);
-        Resources resources;
-        List<Operation> operationListList = sqlManager.getOperationList("SELECT * FROM Operation WHERE " +
+        //TODO Ide EZ kell: (4 = time) és csak az operáció ID kell belőle, az alapján kell letölteni az operáció listát
+        // SELECT o.id, o.jobid FROM (
+        //SELECT id, jobid, sum(run_time) as total_run_time FROM Operation WHERE
+        //IsFinished = false
+        //group by jobid )
+        //AS o
+        //inner join
+        //(select * from job where arrival_time <= 4) as j
+        //on j.ID = o.JobID
+
+        // TODO operationList letöltése a fentebb létrehozott operácó ID k alapján.
+        List<Operation> operationList = sqlManager.getOperationList("SELECT * FROM Operation WHERE " +
                 "IsFinished = false and " +
                 "jobid in ( SELECT ID from JOB where arrival_time <= " + time + " and isAvailable = true )");
 
+        return magic(operationList, time);
+    }
+
+    public List<ScheduledTask> lpt_lrpt(int time) {
+
+        System.out.println("lpt run");
+        System.out.println("Time: " + time);
+
+        //TODO Ide EZ kell: (4 = time) a fentiek alapján + meg kell benne cserélni, CSÖKKENŐ sorrendebn legyen a total_run_time
+        // SELECT o.id, o.jobid FROM (
+        //SELECT id, jobid, sum(run_time) as total_run_time FROM Operation WHERE
+        //IsFinished = false
+        //group by jobid )
+        //AS o
+        //inner join
+        //(select * from job where arrival_time <= 4) as j
+        //on j.ID = o.JobID
+
+        // TODO operationList letöltése a fentebb létrehozott operácó ID k alapján.
+        List<Operation> operationList = sqlManager.getOperationList("SELECT * FROM Operation WHERE " +
+                "IsFinished = false and " +
+                "jobid in ( SELECT ID from JOB where arrival_time <= " + time + " and isAvailable = true )");
+
+        return magic(operationList, time);
+    }
+
+    private List<ScheduledTask> erd(int time) {
+        //Ez kb pont az ami nekem kell, sorban jönnek ami éppen elérhető
+        List<Operation> operationList = sqlManager.getOperationList("SELECT * FROM Operation WHERE " +
+                "IsFinished = false and " +
+                "jobid in ( SELECT ID from JOB where arrival_time <= " + time + " and isAvailable = true )");
+
+        return magic(operationList, time);
+    }
+
+    private List<ScheduledTask> edd(int time) {
+        //TODO ez meg valami ehhez hasonló kéne legyen
+//        SELECT * FROM (
+//                SELECT * FROM Operation WHERE
+//                IsFinished = false)
+//        AS o
+//        inner join
+//        (select id, min(deadline) from job where arrival_time <= 4) as j
+//        on j.ID = o.JobID
+
+        List<Operation> operationList = sqlManager.getOperationList("SELECT * FROM Operation WHERE " +
+                "IsFinished = false and " +
+                "jobid in ( SELECT ID from JOB where arrival_time <= " + time + " and isAvailable = true )");
+
+        return magic(operationList, time);
+    }
+
+//    TODO A legkisebb gyártási időtartalékkal rendelkező job
+//    kerül kiválasztásra. Gyártási időtartalék =
+//            határidő – indítási időpont – műveleti idők összege.
+//
+//        private List<Job> sss() {
+//        List<Job> jobList = sqlManager.getJobList("SELECT *  FROM Job ORDER BY" +
+//                "(deadline - arrival_time -run_time");
+//        return jobList;
+//    }
+
+        //TODO CR ütemezés
+    //A legkisebb kritikus rátával (CR) rendelkező job kerül
+//    kiválasztásra. CR = (határidő – aktuális időpont) /
+//    hátralévő műveletek idejének összege.
+//             Ha CR = 1 a job kritikus.
+// Ha CR < 1 a job már késik.
+//             Ha CR > 1 a job-nak van tartaléka.
+
+//    public List<Job> cr(int actual_time) {
+//        return null;
+//    }
+
+
+    // Here happened the magic :)
+    private List<ScheduledTask> magic(List<Operation> operationList, int time) {
+        List<ScheduledTask> scheduledTaskList = new ArrayList<>();
+        Resources resources;
+
         int jobid = 0;
-        for (Operation o : operationListList) {
+        for (Operation o : operationList) {
             if (jobid != o.getJobID()) {
+                if (time == 63)
+                    System.out.println("now");
                 System.out.println("Operation:" + o);
                 jobid = o.getJobID();
 
                 resources = sqlManager.findNeededResource(o.getOpType());
-                if(resources != null) {
+                if (resources != null) {
                     setResource(o, resources);
                     operationResultList.add(o);
                     sqlManager.setJobActive(o.getJobID(), false);
-
-                    //Start a new thread
-                    processor = new MultiThread(o, resources);
-                    Task<Void> t = processor.createTask();
-                    ProgressBar bar = new ProgressBar();
-                    bar.progressProperty().bind(t.progressProperty());
-                    new Thread(t).start();
-
-                    System.out.println(t);
+                    scheduledTaskList.add(new ScheduledTask(o.getJobID(), o.getId(), resources.getId(), o.getRunTime() + time));
                 }
             }
         }
-        return operationListList;
+        return scheduledTaskList;
     }
 
     private void setResource(Operation o, Resources r) {
         sqlManager.setResourceUsed(r.getId());
     }
-
-
-
-//
-//    public List<Job> lpt() {
-//        List<Job> jobList = sqlManager.getJobList("SELECT * FROM Job ORDER BY arrival_time, run_time DESC");
-//        return jobList;
-//    }
-//
-//    private List<Job> edd() {
-//        List<Job> jobList = sqlManager.getJobList("SELECT * FROM Job ORDER BY deadline");
-//
-//        return jobList;
-//    }
-//
-//    private List<Job> erd() {
-//        List<Job> jobList = sqlManager.getJobList("SELECT * FROM Job ORDER BY arrival_time");
-//
-//        return jobList;
-//    }
-//
-//    private List<Job> sss() {
-//        List<Job> jobList = sqlManager.getJobList("SELECT *  FROM Job ORDER BY" +
-//                "(deadline - arrival_time -run_time");
-//        return jobList;
-//    }
-//
-//    public List<Job> cr(int actual_time) {
-//        return null;
-//    }
-
-//    public void startTimer(Operation o) {
-//        Timer timer = new Timer();
-//        timer.scheduleAtFixedRate(new TimerTask() {
-//            int i = 1;
-//
-//            public void run() {
-//                if (i <= o.getRunTime()) {
-//                    System.out.println("Timer2: " + i);
-//                    i++;
-//                } else
-//                    timer.cancel();
-//            }
-//        }, PublicVariables.TimerDelay, PublicVariables.TimerPeriod);
-//
-//        System.out.println("Timer2 end");
-//        sqlManager.setJobActive(o.getJobID(), true);
-//        sqlManager.setOperationFinished(o.getId());
-//    }
-
+    
 }

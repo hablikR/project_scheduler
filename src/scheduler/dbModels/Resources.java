@@ -1,4 +1,4 @@
-package scheduler.business_logic;
+package scheduler.dbModels;
 
 
 import com.sun.org.apache.regexp.internal.RE;
@@ -40,20 +40,7 @@ public class Resources {
         return totalRunTime;
     }
 
-    public void setTotalRunTime(int totalRunTime) {
-        this.totalRunTime = totalRunTime;
-    }
-
-    public boolean isAvailable() {
-        return isAvailable;
-    }
-
-    public void setAvailable(boolean available) {
-        isAvailable = available;
-    }
-
     public int getJob_count() {
         return job_count;
     }
-
 }

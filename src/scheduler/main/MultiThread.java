@@ -1,9 +1,8 @@
 package scheduler.main;
 
 
-import javafx.application.Platform;
 import javafx.concurrent.Task;
-import scheduler.business_logic.Resources;
+import scheduler.dbModels.Resources;
 import scheduler.business_logic.ScedulingRules;
 import scheduler.dbModels.Operation;
 import scheduler.gui.GUIController;
@@ -17,7 +16,7 @@ import static scheduler.main.SchedulerContoller.sqlManager;
 
 
 public class MultiThread {
-
+/*
 
     private Operation operation;
     private Resources resources;
@@ -79,7 +78,7 @@ public class MultiThread {
 //
 //    Osztalyneve processor = new Osztalyneve();
 //        processor.start();
-
+*/
 }
 
 
