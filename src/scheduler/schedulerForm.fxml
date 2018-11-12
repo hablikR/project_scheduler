@@ -21,7 +21,7 @@
                 <ToolBar prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER">
                     <items>
                   <Label text="Rules:" />
-                  <ChoiceBox prefWidth="150.0" />
+                  <ChoiceBox fx:id="rules_DropDown" prefWidth="150.0" />
                         <Button fx:id="run_Button" mnemonicParsing="false" text="Run" />
                   <Button fx:id="randomData_Button" mnemonicParsing="false" text="Generate test data" />
                   <Text fx:id="counterText" strokeType="OUTSIDE" strokeWidth="0.0" text="Time: 10" wrappingWidth="130.13671875" />

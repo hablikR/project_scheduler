@@ -56,4 +56,10 @@ public class Operation {
         return operationName;
     }
 
+    @Override
+    public String toString() {
+        return "Operation{" +
+                "operationName='" + operationName + '\'' +
+                '}';
+    }
 }

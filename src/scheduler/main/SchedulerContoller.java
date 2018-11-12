@@ -2,6 +2,7 @@ package scheduler.main;
 
 
 import javafx.application.Application;
+import javafx.concurrent.Task;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
@@ -76,9 +77,7 @@ public class SchedulerContoller extends Application {
     public static void main(String[] args) {
         sqlManager = new SQLManager("db");
         launch(args);
-        MultiThread multiThread = new MultiThread();
 
-        multiThread.createTask();
     }
 
 }

@@ -2,12 +2,10 @@ package scheduler.gui;
 
 import java.net.URL;
 
-import java.util.List;
-import java.util.ResourceBundle;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -17,8 +15,12 @@ import javafx.scene.text.Text;
 import scheduler.business_logic.ScedulingRules;
 import scheduler.dbModels.Job;
 import scheduler.dbModels.Operation;
+import scheduler.main.MultiThread;
+import scheduler.util.PublicVariables;
 import scheduler.util.SQLManager;
 import scheduler.util.Util;
+
+import static java.lang.System.exit;
 
 public class GUIController implements Initializable {
     //#region operation
@@ -62,13 +64,15 @@ public class GUIController implements Initializable {
     Button run_Button;
     @FXML
     Button randomData_Button;
-
+    @FXML
+    ChoiceBox rules_DropDown;
 
     @FXML
-    private Text counterText;
+    public Text counterText;
 
 
     private SQLManager sqlManager;
+    private ScedulingRules scedulingRules = new ScedulingRules();
 
     public GUIController() {
 
@@ -85,6 +89,7 @@ public class GUIController implements Initializable {
         buttonAction();
         fillIDLists();
         fillOperationList();
+        fillDropDownList();
     }
 
     public void buttonAction() {
@@ -136,9 +141,17 @@ public class GUIController implements Initializable {
         run_Button.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-              // ScedulingRules s = new ScedulingRules();
-               // s.spt();
-                setTimer();
+//                List<Operation> sptJobList = scedulingRules.spt_srpt(1);
+//                setTimer();
+
+                MultiThread processor = new MultiThread();
+                Task<Void> t = processor.setTimer();
+                ProgressBar bar = new ProgressBar();
+                bar.progressProperty().bind(t.progressProperty());
+                new Thread(t).start();
+
+                System.out.println("----Scheduling rules----");
+
             }
         });
 
@@ -150,6 +163,11 @@ public class GUIController implements Initializable {
         });
     }
 
+    public void fillDropDownList(){
+        String[] rules = {"SPT", "LPT", "EDD", "SSS", "ERD"};
+
+        rules_DropDown.getItems().addAll(Arrays.asList(rules));
+    }
     private void fillIDLists() {
         operationID_List.getItems().clear();
         jobID_List.getItems().clear();
@@ -174,7 +192,7 @@ public class GUIController implements Initializable {
         return Integer.parseInt(splitted[1]);
     }
 
-    private void generateRandomData(){
+    private void generateRandomData() {
 
         Util util = new Util();
         sqlManager.clearTables();
@@ -192,20 +210,27 @@ public class GUIController implements Initializable {
         fillIDLists();
     }
 
-    public void setTimer() {
+/*
+    public synchronized void setTimer() {
+
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
             int i = 1;
+            int  operationCount = sqlManager.getNotFinishedOperations();
+
             public void run() {
-                if(i <= 10)
-                {
-                    Platform.runLater(() -> counterText.setText("Time: " + i));
+                if (operationCount !=0) { //kilépési feltéltel, ha elfogytak a jobok.
                     i++;
-                }
-                else
+                    Platform.runLater(() -> counterText.setText("Time: " + i));
+                    List<Operation> sptJobList = scedulingRules.spt_srpt(i);
+                    operationCount = sqlManager.getNotFinishedOperations();
+
+                } else
                     timer.cancel();
             }
-        }, 1000,1000);
+
+        }, PublicVariables.TimerDelay, PublicVariables.TimerPeriod);
     }
+*/
 
 }
