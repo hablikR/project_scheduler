@@ -1,8 +1,6 @@
 package scheduler.dbModels;
 
 
-import com.sun.org.apache.regexp.internal.RE;
-
 public class Resources {
 
     private int id;
@@ -30,10 +28,6 @@ public class Resources {
 
     public int getId() {
         return id;
-    }
-
-    public String getType() {
-        return type;
     }
 
     public int getTotalRunTime() {

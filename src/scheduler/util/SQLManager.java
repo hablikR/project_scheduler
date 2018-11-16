@@ -1,6 +1,7 @@
 package scheduler.util;
 
 import org.sqlite.SQLiteException;
+import scheduler.dbModels.OperationResult;
 import scheduler.dbModels.Resources;
 import scheduler.dbModels.Job;
 import scheduler.dbModels.Operation;
@@ -336,9 +337,9 @@ public class SQLManager {
         return result;
     }
 
-    public Resources findNeededResource(String type) {
-        String sqlString = "SELECT ID, Total_run_time, job_count, name FROM Resource WHERE Operation_type = '"+ type +"'"
-                + " and IsAvailable = true LIMIT 1";
+    public Resources findNeededResource(String type, String rule) {
+        String sqlString = "SELECT ID, Total_run_time_" + rule + ", job_count_" + rule + ", name FROM Resource WHERE Operation_type = '" + type + "'"
+                + " and IsAvailable_" + rule + " = true LIMIT 1";
         Resources result = null;
         try {
             Statement statement = conn.createStatement();
@@ -346,8 +347,8 @@ public class SQLManager {
             while (resultSet.next()) {
                 result = new Resources(
                         resultSet.getInt("id"),
-                        resultSet.getInt("Total_run_time"),
-                        resultSet.getInt("job_count"),
+                        resultSet.getInt("Total_run_time_" + rule),
+                        resultSet.getInt("job_count_" + rule),
                         true
                 );
                 System.out.println("id:" + resultSet.getInt("id") +
@@ -358,8 +359,9 @@ public class SQLManager {
         }
         return result;
     }
-    public Resources findNeededResourceById(int id) {
-        String sqlString = "SELECT ID, Total_run_time, job_count FROM Resource WHERE id = '" + id +"'";
+
+    public Resources findNeededResourceById(int id, String rule) {
+        String sqlString = "SELECT ID, Total_run_time_" + rule + ", job_count_" + rule + " FROM Resource WHERE id = '" + id + "'";
 
         Resources result = null;
         try {
@@ -368,8 +370,8 @@ public class SQLManager {
             while (resultSet.next()) {
                 result = new Resources(
                         resultSet.getInt("id"),
-                        resultSet.getInt("Total_run_time"),
-                        resultSet.getInt("job_count"),
+                        resultSet.getInt("Total_run_time_" + rule),
+                        resultSet.getInt("job_count_" + rule),
                         true
                 );
             }
@@ -379,8 +381,8 @@ public class SQLManager {
         return result;
     }
 
-    public void setJobActive(int jobId, boolean isAvailable) {
-        String sqlString = "UPDATE Job SET  isAvailable= ? WHERE ID = ?";
+    public void setJobActive(int jobId, boolean isAvailable, String rule) {
+        String sqlString = "UPDATE Job SET  isAvailable_" + rule + "= ? WHERE ID = ?";
         try {
             PreparedStatement preparedStatement = conn.prepareStatement(sqlString);
             preparedStatement.setBoolean(1, isAvailable);
@@ -391,22 +393,22 @@ public class SQLManager {
         }
     }
 
-    public void setOperationFinished(int opId) {
-        String sqlString = "UPDATE Operation SET  IsFinished= ? WHERE ID = ?";
+    public void setOperationFinished(int opId, String rule) {
+        String sqlString = "UPDATE Operation SET  " + rule + "Finished= ? WHERE ID = ?";
 
         try {
             PreparedStatement preparedStatement = conn.prepareStatement(sqlString);
             preparedStatement.setBoolean(1, true);
             preparedStatement.setInt(2, opId);
             preparedStatement.executeUpdate();
-            System.out.println(sqlString +" ID: " + opId);
+            System.out.println(sqlString + " ID: " + opId);
         } catch (Exception e) {
             System.out.println(" update operation status error: " + e);
         }
     }
 
-    public void setResourceUsed(int id) {
-        String sqlString = "UPDATE Resource SET IsAvailable= false WHERE ID = ?";
+    public void setResourceUsed(int id, String rule) {
+        String sqlString = "UPDATE Resource SET IsAvailable_" + rule + "= false WHERE ID = ?";
         try {
             PreparedStatement preparedStatement = conn.prepareStatement(sqlString);
             preparedStatement.setInt(1, id);
@@ -416,8 +418,8 @@ public class SQLManager {
         }
     }
 
-    public void setResourceAvailable(int id, int jobCount, int runtime) {
-        String sqlString = "UPDATE Resource SET IsAvailable= true, job_count = ?, Total_run_time = ? WHERE ID = ?";
+    public void setResourceAvailable(int id, int jobCount, int runtime, String rule) {
+        String sqlString = "UPDATE Resource SET IsAvailable_" + rule + "= true, job_count_" + rule + " = ?, Total_run_time_" + rule + " = ? WHERE ID = ?";
         try {
             PreparedStatement preparedStatement = conn.prepareStatement(sqlString);
             preparedStatement.setInt(1, jobCount);
@@ -429,21 +431,134 @@ public class SQLManager {
         }
     }
 
-    public int getNotFinishedOperations(){
-        String sqlString = "SELECT count(*) FROM Operation WHERE IsFinished = false";
-        int result =0;
+    public int getNotFinishedOperations(String rule) {
+        String sqlString = "SELECT count(*) FROM Operation WHERE " + rule + "Finished = false";
+        int result = 0;
         try {
             Statement statement = conn.createStatement();
             ResultSet resultSet = statement.executeQuery(sqlString);
             while (resultSet.next()) {
-                result =resultSet.getInt(1);
+                result = resultSet.getInt(1);
             }
         } catch (Exception e) {
             System.out.println("Get not finished operaion count: " + e);
         }
         return result;
     }
+
+    public void insertSelectedOperationInResultTable(String rule, Operation operation, int time) {
+        String sqlString = "INSERT INTO Result_" + rule + " ( OperationID, JobID,Name,start_time,run_time,Type)" +
+                " VALUES (?,?,?,?,?,?)";
+
+        try {
+            PreparedStatement preparedStatement = conn.prepareStatement(sqlString);
+            preparedStatement.setInt(1, operation.getId());
+            preparedStatement.setInt(2, operation.getJobID());
+            preparedStatement.setString(3, operation.getOperationName());
+            preparedStatement.setInt(4, time);
+            preparedStatement.setInt(5, operation.getRunTime());
+            preparedStatement.setString(6, operation.getOpType());
+
+            preparedStatement.executeUpdate();
+            // System.out.println("insert data OK");
+        } catch (SQLiteException e) {
+            System.out.println("Result table insert error: " + e);
+        } catch (Exception e) {
+            System.out.println("Insert faild:" + e);
+        }
+    }
+
+    public void resetResult() {
+        String sqlString = "DELETE FROM Result_cr;" +
+                "DELETE FROM Result_sss;" +
+                "DELETE FROM Result_edd;" +
+                "DELETE FROM Result_erd;" +
+                "DELETE FROM Result_lpt;" +
+                "DELETE FROM Result_spt;" +
+                "DELETE FROM Result_sa;";
+
+        try {
+            Statement statement = conn.createStatement();
+            statement.executeUpdate(sqlString);
+        } catch (Exception e) {
+            System.out.println("DELETE rule error: " + e);
+        }
+    }
+
+    public void resetResources() {
+        String sqlString = "UPDATE Resource SET job_count_spt = 0, Total_run_time_spt = 0, IsAvailable_spt = 1, " +
+                "job_count_lpt = 0, Total_run_time_lpt = 0, IsAvailable_lpt = 1, job_count_edd = 0, " +
+                "Total_run_time_edd = 0,  IsAvailable_edd = 1, job_count_erd = 0, Total_run_time_erd = 0, " +
+                "IsAvailable_erd = 1, job_count_sss = 0, Total_run_time_sss = 0, IsAvailable_sss = 1, job_count_cr = 0," +
+                " Total_run_time_cr = 0, IsAvailable_cr = 1, job_count_sa = 0, Total_run_time_sa = 0, IsAvailable_sa = 1";
+        try {
+            Statement statement = conn.createStatement();
+            statement.executeUpdate(sqlString);
+        } catch (Exception e) {
+            System.out.println("Reset resources data error" + e);
+        }
+
+    }
+
+    public void resetOperations() {
+        String sqlString = "UPDATE Operation SET sptFinished = 0,lptFinished = 0,erdFinished = 0,eddFinished = 0," +
+                "sssFinished = 0,crFinished = 0,saFinished = 0";
+
+        try {
+            Statement statement = conn.createStatement();
+            statement.executeUpdate(sqlString);
+        } catch (Exception e) {
+            System.out.println("Reset operations data error" + e);
+        }
+
+    }
+
+    public void resetJobs() {
+        String sqlString = "UPDATE Job SET end_time = 0, isAvailable_spt = 1,isAvailable_lpt = 1,isAvailable_edd = 1, " +
+                "isAvailable_erd = 1,isAvailable_sss =1 ,isAvailable_cr = 1,isAvailable_sa = 1";
+        try {
+            Statement statement = conn.createStatement();
+            statement.executeUpdate(sqlString);
+        } catch (Exception e) {
+            System.out.println("Reset job data error" + e);
+        }
+
+    }
+
+    public List<OperationResult> getOperationResultList(String rule) {
+        String sqlQuery = "SELECT ID, OperationID, JobID, Name, " +
+                "start_time, run_time, type FROM Result_" + rule;
+
+        List<OperationResult> result = new ArrayList<>();
+
+        try {
+            Statement statement = conn.createStatement();
+            ResultSet resultSet = statement.executeQuery(sqlQuery);
+
+            OperationResult temp;
+            while (resultSet.next()) {
+                temp = new OperationResult(
+                        resultSet.getInt("ID"),
+                        resultSet.getInt("OperationID"),
+                        resultSet.getInt("JobID"),
+                        resultSet.getString("Name"),
+                        resultSet.getInt("start_time"),
+                        resultSet.getInt("run_time"),
+                        resultSet.getString("type")
+                        );
+
+                result.add(temp);
+            }
+        } catch (Exception e) {
+            System.out.println("Result list error by " + rule + e);
+        }
+
+        return result;
+
+    }
+
     //Private methodes
+
     private Job selectJobByID(int id) {
 
         String sqlString = "SELECT * FROM Job where ID = " + id;

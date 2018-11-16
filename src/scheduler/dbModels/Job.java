@@ -59,7 +59,7 @@ public class Job {
                 this.name,
                 this.arrivalTime,
                 newRunTime,
-                newRunTime + random.nextInt(40)+3,
+                newRunTime + random.nextInt(80)+40,
                  this.endTime
         );
         return j;
@@ -81,10 +81,6 @@ public class Job {
         return deadline;
     }
 
-    public int getEndTime() {
-        return endTime;
-    }
-
     public String getName() {
         return name;
     }
@@ -99,16 +95,5 @@ public class Job {
                 ", deadline=" + deadline +
                 ", endTime=" + endTime +
                 '}';
-    }
-
-    public static class CRComparator implements Comparator<Job> {
-
-        public int compare(Job a, Job b) {
-            if (b.deadline-b.arrivalTime- b.runTime < a.deadline-a.arrivalTime- a.runTime)
-                return 1;
-            if ( a.deadline-a.arrivalTime- a.runTime < b.deadline-b.arrivalTime- b.runTime)
-                return -1;
-            return 0;
-        }
     }
 }

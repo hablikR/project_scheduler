@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.chart.StackedBarChart?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TextField?>
@@ -25,6 +29,7 @@
                         <Button fx:id="run_Button" mnemonicParsing="false" text="Run" />
                   <Button fx:id="randomData_Button" mnemonicParsing="false" text="Generate test data" />
                   <Text fx:id="counterText" strokeType="OUTSIDE" strokeWidth="0.0" text="Time: 10" wrappingWidth="130.13671875" />
+                  <Button fx:id="reset_Button" mnemonicParsing="false" text="Reset Data " />
                     </items>
                 </ToolBar>
             </top>
@@ -85,6 +90,41 @@
                                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
                             </content>
                         </Tab>
+                  <Tab text="Result">
+                    <content>
+                      <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                           <children>
+                              <Pane prefHeight="716.0" prefWidth="1209.0">
+                                 <children>
+                                    <Button fx:id="show_Button" layoutX="14.0" layoutY="14.0" mnemonicParsing="false" text="Show" />
+                                    <ScrollPane layoutX="10.0" layoutY="51.0" prefHeight="445.0" prefWidth="1183.0">
+                                      <content>
+                                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="249.0" prefWidth="254.0">
+                                             <children>
+                                                <Pane prefHeight="443.0" prefWidth="706.0">
+                                                   <children>
+                                                      <StackedBarChart fx:id="spt_stackedChart" accessibleRole="IMAGE_VIEW" blendMode="SCREEN" cache="true" cacheHint="SCALE" prefHeight="656.0" prefWidth="694.0">
+                  
+                                                        <xAxis>
+                                                          <NumberAxis side="BOTTOM" fx:id="x_axisStacked" />
+                                                        </xAxis>
+                                                        <yAxis>
+                                                          <CategoryAxis fx:id="y_axisStacked" blendMode="OVERLAY" cache="true" cacheHint="SCALE" side="LEFT" />
+                                                        </yAxis>
+                  
+                                                      </StackedBarChart>
+                                                   </children>
+                                                </Pane>
+                                             </children>
+                                          </AnchorPane>
+                                      </content>
+                                    </ScrollPane>
+                                 </children>
+                              </Pane>
+                           </children>
+                        </AnchorPane>
+                    </content>
+                  </Tab>
                     </tabs>
                 </TabPane>
             </center>
