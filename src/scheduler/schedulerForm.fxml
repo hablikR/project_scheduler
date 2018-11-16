@@ -101,20 +101,16 @@
                                       <content>
                                         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="249.0" prefWidth="254.0">
                                              <children>
-                                                <Pane prefHeight="443.0" prefWidth="706.0">
-                                                   <children>
-                                                      <StackedBarChart fx:id="spt_stackedChart" accessibleRole="IMAGE_VIEW" blendMode="SCREEN" cache="true" cacheHint="SCALE" prefHeight="656.0" prefWidth="694.0">
-                  
+                                                <StackedBarChart fx:id="spt_stackedChart" accessibleRole="IMAGE_VIEW" blendMode="SCREEN" cache="true" cacheHint="SCALE" prefHeight="656.0" prefWidth="694.0">
+            
                                                         <xAxis>
-                                                          <NumberAxis side="BOTTOM" fx:id="x_axisStacked" />
-                                                        </xAxis>
-                                                        <yAxis>
-                                                          <CategoryAxis fx:id="y_axisStacked" blendMode="OVERLAY" cache="true" cacheHint="SCALE" side="LEFT" />
-                                                        </yAxis>
-                  
+                                                    <NumberAxis side="BOTTOM" fx:id="x_axisStacked" />
+                                                  </xAxis>
+                                                  <yAxis>
+                                                    <CategoryAxis fx:id="y_axisStacked" blendMode="OVERLAY" cache="true" cacheHint="SCALE" side="LEFT" />
+                                                  </yAxis>
+            
                                                       </StackedBarChart>
-                                                   </children>
-                                                </Pane>
                                              </children>
                                           </AnchorPane>
                                       </content>
